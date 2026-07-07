@@ -1,0 +1,25 @@
+aws_region   = "ap-northeast-2"
+project_name = "splunk-ddos-protect"
+environment  = "dev"
+
+vpc_cidr             = "10.0.0.0/16"
+availability_zones   = ["ap-northeast-2a", "ap-northeast-2c"]
+public_subnet_cidrs  = ["10.0.0.0/24", "10.0.10.0/24"]
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.11.0/24"]
+
+key_pair_name = "your-ec2-keypair"
+admin_cidr    = "203.0.113.10/32"
+
+bastion_instance_type = "t3.micro"
+app_instance_type     = "t3.micro"
+app_port              = 80
+
+log_bucket_name    = "your-unique-splunk-ddos-logs-bucket"
+log_retention_days = 90
+
+waf_rate_limit = 2000
+
+# 선택 사항: 사용자 도메인을 CloudFront에 연결할 때만 설정합니다.
+domain_name         = ""
+route53_zone_id     = ""
+acm_certificate_arn = ""

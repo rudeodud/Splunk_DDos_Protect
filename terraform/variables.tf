@@ -1,127 +1,118 @@
-# ============================================================
-# General Settings
-# ============================================================
 variable "aws_region" {
-  description = "AWS 리전"
+  description = "주 AWS 리전"
   type        = string
-  default     = "ap-northeast-2" # 서울 리전
+  default     = "ap-northeast-2"
 }
 
 variable "project_name" {
-  description = "프로젝트 이름 (리소스 네이밍에 사용)"
+  description = "프로젝트 이름"
   type        = string
   default     = "splunk-ddos-protect"
 }
 
 variable "environment" {
-  description = "배포 환경 (dev / staging / prod)"
+  description = "배포 환경"
   type        = string
   default     = "dev"
-
-  validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "environment 값은 dev, staging, prod 중 하나여야 합니다."
-  }
 }
 
-# ============================================================
-# VPC / Network
-# ============================================================
 variable "vpc_cidr" {
-  description = "VPC CIDR 블록"
+  description = "VPC CIDR"
   type        = string
   default     = "10.0.0.0/16"
 }
 
-variable "public_subnet_cidrs" {
-  description = "퍼블릭 서브넷 CIDR 목록 (AZ 수만큼)"
-  type        = list(string)
-  default     = ["10.0.1.0/24", "10.0.2.0/24"]
-}
-
-variable "private_subnet_cidrs" {
-  description = "프라이빗 서브넷 CIDR 목록 (AZ 수만큼)"
-  type        = list(string)
-  default     = ["10.0.10.0/24", "10.0.11.0/24"]
-}
-
 variable "availability_zones" {
-  description = "사용할 가용 영역 목록"
+  description = "사용할 가용 영역"
   type        = list(string)
   default     = ["ap-northeast-2a", "ap-northeast-2c"]
 }
 
-# ============================================================
-# EC2 / Splunk
-# ============================================================
-variable "splunk_instance_type" {
-  description = "Splunk EC2 인스턴스 타입"
-  type        = string
-  default     = "t3.large"
+variable "public_subnet_cidrs" {
+  description = "Public subnet CIDR 목록"
+  type        = list(string)
+  default     = ["10.0.0.0/24", "10.0.10.0/24"]
 }
 
-variable "splunk_ami_id" {
-  description = "Splunk 서버 AMI ID (Amazon Linux 2023)"
-  type        = string
-  default     = "ami-0c9c942bd7bf113a2" # Amazon Linux 2023 (ap-northeast-2)
+variable "private_subnet_cidrs" {
+  description = "Private subnet CIDR 목록"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.11.0/24"]
 }
 
 variable "key_pair_name" {
-  description = "EC2 접속용 키 페어 이름"
+  description = "EC2 SSH key pair 이름"
   type        = string
 }
 
-variable "splunk_web_port" {
-  description = "Splunk Web UI 포트"
-  type        = number
-  default     = 8000
+variable "admin_cidr" {
+  description = "Bastion SSH 접근 허용 CIDR"
+  type        = string
+  default     = "203.0.113.10/32"
 }
 
-variable "splunk_hec_port" {
-  description = "Splunk HEC (HTTP Event Collector) 포트"
-  type        = number
-  default     = 8088
+variable "bastion_instance_type" {
+  description = "Bastion EC2 인스턴스 타입"
+  type        = string
+  default     = "t3.micro"
 }
 
-# ============================================================
-# S3 (로그 저장소)
-# ============================================================
+variable "app_instance_type" {
+  description = "Private application EC2 인스턴스 타입"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "ami_id" {
+  description = "EC2 AMI ID. 비워두면 Amazon Linux 2023 최신 AMI를 사용"
+  type        = string
+  default     = ""
+}
+
+variable "app_port" {
+  description = "애플리케이션 포트"
+  type        = number
+  default     = 80
+}
+
 variable "log_bucket_name" {
-  description = "DDoS/WAF 로그를 저장할 S3 버킷 이름 (전역 고유)"
+  description = "CloudFront/WAF 로그 저장 S3 버킷 이름. 비우면 자동 생성"
   type        = string
+  default     = ""
 }
 
 variable "log_retention_days" {
-  description = "S3 로그 보존 기간 (일)"
+  description = "S3 로그 보존 기간"
   type        = number
   default     = 90
 }
 
-# ============================================================
-# WAF / Shield
-# ============================================================
-variable "enable_aws_shield_advanced" {
-  description = "AWS Shield Advanced 활성화 여부 (월 $3,000 과금 주의)"
-  type        = bool
-  default     = false
-}
-
 variable "waf_rate_limit" {
-  description = "WAF 속도 제한 규칙 – 5분당 최대 요청 수"
+  description = "WAF rate-based rule 제한값. 5분 기준 IP별 요청 수"
   type        = number
   default     = 2000
 }
 
-# ============================================================
-# CloudWatch / Alerting
-# ============================================================
-variable "alarm_email" {
-  description = "DDoS 알람 수신 이메일 주소"
+variable "domain_name" {
+  description = "CloudFront에 연결할 FQDN. 비우면 CloudFront 기본 도메인만 사용"
   type        = string
+  default     = ""
 }
 
-variable "ddos_threshold_requests" {
-  description = "DDoS 감지 임계값 – 분당 요청 수"
-  type        = number
-  default     = 10000
+variable "route53_zone_id" {
+  description = "Route 53 Hosted Zone ID. domain_name 설정 시 필요"
+  type        = string
+  default     = ""
+}
+
+variable "acm_certificate_arn" {
+  description = "CloudFront용 ACM 인증서 ARN. us-east-1 인증서 필요. 비우면 기본 인증서 사용"
+  type        = string
+  default     = ""
+}
+
+variable "cloudfront_price_class" {
+  description = "CloudFront price class"
+  type        = string
+  default     = "PriceClass_200"
 }

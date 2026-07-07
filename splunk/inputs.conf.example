@@ -1,0 +1,20 @@
+# Splunk Add-on for AWS 기준 S3 입력 예시입니다.
+# 실제 배포 시 AWS 계정, IAM Role, SQS 사용 여부, index 이름은 환경에 맞게 수정하세요.
+
+[aws_s3://cloudfront_realtime_logs]
+disabled = 0
+aws_account = default
+bucket_name = your-unique-splunk-ddos-logs-bucket
+key_name = cloudfront/
+index = aws
+sourcetype = aws:cloudfront:accesslogs
+interval = 300
+
+[aws_s3://waf_logs]
+disabled = 0
+aws_account = default
+bucket_name = your-unique-splunk-ddos-logs-bucket
+key_name = waf/
+index = aws
+sourcetype = aws:waf
+interval = 300

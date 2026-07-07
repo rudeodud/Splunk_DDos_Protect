@@ -25,6 +25,23 @@ terraform.rc
 *tfplan*
 *.tfplan
 
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.python-version
+.venv/
+venv/
+env/
+
+# Local environment and generated logs
+.env
+.env.*
+!.env.example
+logs/
+test-logs/
+*.log
+*.gz
+
 # OS generated files
 .DS_Store
 .DS_Store?

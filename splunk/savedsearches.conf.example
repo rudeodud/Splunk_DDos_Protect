@@ -1,0 +1,23 @@
+[DDoS - 특정 IP 요청 급증]
+search = index=aws sourcetype=aws:cloudfront:accesslogs | bin _time span=1m | stats count as request_count by _time c_ip | where request_count > 1000
+cron_schedule = */5 * * * *
+disabled = 0
+alert_type = number of events
+alert_comparator = greater than
+alert_threshold = 0
+
+[DDoS - 403 또는 429 응답 급증]
+search = index=aws sourcetype=aws:cloudfront:accesslogs sc_status IN (403,429) | bin _time span=1m | stats count as blocked_or_throttled by _time | where blocked_or_throttled > 500
+cron_schedule = */5 * * * *
+disabled = 0
+alert_type = number of events
+alert_comparator = greater than
+alert_threshold = 0
+
+[DDoS - 봇 User-Agent 의심]
+search = index=aws sourcetype=aws:cloudfront:accesslogs | regex cs_user_agent="(?i)(curl|python-requests|wget|scrapy|bot|spider|headless)" | stats count by c_ip cs_user_agent | where count > 100
+cron_schedule = */10 * * * *
+disabled = 0
+alert_type = number of events
+alert_comparator = greater than
+alert_threshold = 0

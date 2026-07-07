@@ -1,0 +1,54 @@
+### 특정 IP의 비정상 요청 급증 탐지
+index=aws sourcetype=aws:cloudfront:accesslogs
+| bin _time span=1m
+| stats count as request_count by _time c_ip
+| eventstats avg(request_count) as avg_count stdev(request_count) as stdev_count by c_ip
+| where request_count > avg_count + (3 * stdev_count) OR request_count > 1000
+| sort - request_count
+
+### 403/429 응답 급증 탐지
+index=aws sourcetype=aws:cloudfront:accesslogs sc_status IN (403,429)
+| bin _time span=1m
+| stats count as error_count by _time sc_status
+| where error_count > 500
+| sort - error_count
+
+### User-Agent 기반 봇 의심 탐지
+index=aws sourcetype=aws:cloudfront:accesslogs
+| eval ua=coalesce(cs_user_agent, userAgent)
+| regex ua="(?i)(curl|python-requests|wget|scrapy|bot|spider|headless|nikto|sqlmap)"
+| stats count as request_count dc(cs_uri_stem) as unique_uri by c_ip ua
+| where request_count > 100
+| sort - request_count
+
+### 국가/지역 기반 트래픽 이상 탐지
+index=aws sourcetype=aws:cloudfront:accesslogs
+| iplocation c_ip
+| bin _time span=5m
+| stats count as request_count dc(c_ip) as unique_ips by _time Country
+| eventstats avg(request_count) as avg_count stdev(request_count) as stdev_count by Country
+| where request_count > avg_count + (3 * stdev_count) OR request_count > 5000
+| sort - request_count
+
+### 짧은 시간 내 동일 URI 반복 요청 탐지
+index=aws sourcetype=aws:cloudfront:accesslogs
+| bin _time span=30s
+| stats count as request_count dc(cs_user_agent) as unique_user_agents by _time c_ip cs_uri_stem
+| where request_count > 200
+| sort - request_count
+
+### WAF 차단 이벤트 상위 IP
+index=aws sourcetype=aws:waf action=BLOCK
+| spath
+| rename httpRequest.clientIp as client_ip terminatingRuleId as rule_id
+| stats count as block_count values(rule_id) as rules by client_ip
+| sort - block_count
+
+### WAF rate-based rule 탐지
+index=aws sourcetype=aws:waf
+| spath
+| search terminatingRuleId="rate-limit-by-ip" OR action=BLOCK
+| rename httpRequest.clientIp as client_ip httpRequest.country as country
+| stats count as block_count values(country) as countries by client_ip
+| where block_count > 50
+| sort - block_count
