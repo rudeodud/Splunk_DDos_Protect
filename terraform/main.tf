@@ -135,13 +135,14 @@ resource "aws_instance" "bastion" {
 }
 
 resource "aws_instance" "app" {
-  count                  = 2
-  ami                    = local.selected_ami_id
-  instance_type          = var.app_instance_type
-  subnet_id              = aws_subnet.private[count.index].id
-  vpc_security_group_ids = [aws_security_group.app.id]
-  key_name               = var.key_pair_name
-  iam_instance_profile   = aws_iam_instance_profile.app.name
+  count                       = 2
+  ami                         = local.selected_ami_id
+  instance_type               = var.app_instance_type
+  subnet_id                   = aws_subnet.private[count.index].id
+  vpc_security_group_ids      = [aws_security_group.app.id]
+  key_name                    = var.key_pair_name
+  iam_instance_profile        = aws_iam_instance_profile.app.name
+  user_data_replace_on_change = true
 
   user_data = <<-EOF
     #!/bin/bash
@@ -195,7 +196,7 @@ resource "aws_instance" "app" {
       'ExecStart=/usr/bin/npm start' \
       'Restart=always' \
       'RestartSec=5' \
-      "User=$${APP_USER}" \ 
+      "User=$${APP_USER}" \
       'Environment=NODE_ENV=production' \
       '' \
       '[Install]' \

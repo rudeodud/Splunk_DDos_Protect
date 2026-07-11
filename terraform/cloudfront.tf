@@ -25,7 +25,6 @@ resource "aws_cloudfront_realtime_log_config" "app" {
     "fle-encrypted-fields",
     "fle-status",
     "c-port",
-    "time-to-last-byte",
     "x-edge-detailed-result-type",
     "sc-content-type",
     "sc-content-len",
