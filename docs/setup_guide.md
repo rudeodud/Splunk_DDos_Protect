@@ -5,7 +5,7 @@
 - Terraform `>= 1.5.0`
 - AWS CLI 인증 설정
 - EC2 Key Pair
-- Splunk Enterprise 또는 Splunk Cloud
+- Terraform이 생성하는 Splunk Enterprise EC2
 - Splunk Add-on for AWS
 
 AWS 인증은 환경 변수, AWS SSO, profile, IAM Role 등으로 설정합니다. Access Key와 Secret Key를 Terraform 코드에 넣지 않습니다.
@@ -26,6 +26,7 @@ log_bucket_name = "your-unique-splunk-ddos-logs-bucket"
 ```
 
 이 아키텍처는 Route 53을 사용하지 않고 CloudFront 기본 도메인으로 접근합니다.
+Splunk Enterprise EC2도 같이 생성되며, `admin_cidr`에서만 Splunk Web UI 8000 포트에 접근할 수 있습니다.
 
 ## 3. 배포
 
@@ -37,7 +38,14 @@ terraform plan
 terraform apply
 ```
 
-배포 후 `cloudfront_domain_name`, `log_bucket_name`, `bastion_public_ip` 출력을 확인합니다. 접속 테스트는 `cloudfront_domain_name` 출력값을 사용합니다.
+배포 후 `cloudfront_domain_name`, `splunk_web_url`, `log_bucket_name`, `bastion_public_ip` 출력을 확인합니다. 접속 테스트는 `cloudfront_domain_name` 출력값을 사용합니다.
+
+Splunk admin 비밀번호와 HEC 토큰 확인:
+
+```bash
+terraform output -raw splunk_admin_password
+terraform output -raw splunk_hec_token
+```
 
 ## 4. Splunk 수집 설정
 

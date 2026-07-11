@@ -7,8 +7,9 @@ locals {
 }
 
 resource "aws_s3_bucket" "logs" {
-  provider = aws.us_east_1
-  bucket   = local.log_bucket
+  provider      = aws.us_east_1
+  bucket        = local.log_bucket
+  force_destroy = true
 
   tags = {
     Name = local.log_bucket

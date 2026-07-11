@@ -23,6 +23,33 @@ output "bastion_public_ip" {
   value       = aws_instance.bastion.public_ip
 }
 
+output "splunk_web_url" {
+  description = "Splunk Web UI URL"
+  value       = "http://${aws_instance.splunk.public_ip}:${var.splunk_web_port}"
+}
+
+output "splunk_private_ip" {
+  description = "Splunk EC2 private IP"
+  value       = aws_instance.splunk.private_ip
+}
+
+output "splunk_hec_url" {
+  description = "App EC2에서 사용하는 Splunk HEC URL"
+  value       = local.effective_splunk_hec_url
+}
+
+output "splunk_admin_password" {
+  description = "Splunk admin password"
+  value       = local.effective_splunk_admin_password
+  sensitive   = true
+}
+
+output "splunk_hec_token" {
+  description = "Splunk HEC token"
+  value       = local.effective_splunk_hec_token
+  sensitive   = true
+}
+
 output "app_private_ips" {
   description = "Private application EC2 IPs"
   value       = aws_instance.app[*].private_ip

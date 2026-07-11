@@ -4,6 +4,7 @@
 # .tfstate files
 *.tfstate
 *.tfstate.*
+.terraform.tfstate.lock.info
 
 # Crash log files
 crash.log
@@ -24,6 +25,8 @@ terraform.rc
 # Ignore tfplan
 *tfplan*
 *.tfplan
+*.tfplan.json
+*.plan
 
 # Python cache and virtual environments
 __pycache__/
@@ -54,6 +57,28 @@ backend/logs/
 test-logs/
 *.log
 *.gz
+*.ndjson
+
+# Local credentials and private keys
+*.pem
+*.key
+*.p8
+*.p12
+*.crt
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+aws_access_key*
+aws_secret*
+credentials
+
+# Splunk local/runtime artifacts
+splunk/*.local
+splunk/local/
+splunk/var/
+splunk/etc/
+*.dump
 
 # Editor and local tooling
 .idea/

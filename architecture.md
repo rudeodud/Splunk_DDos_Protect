@@ -17,9 +17,10 @@ User -> CloudFront -> AWS WAF -> ALB -> Private EC2 2대
 ```text
 CloudFront Real-time Logs -> Kinesis Data Stream -> Firehose -> S3 -> Splunk
 AWS WAF Logs              -> Firehose             -> S3 -> Splunk
+Product Click JSON        -> App EC2 Backend      -> Splunk HEC
 ```
 
-CloudFront 실시간 로그는 Kinesis Data Stream으로 전달되고, Firehose가 이를 S3에 적재합니다. AWS WAF 로그는 WAF logging configuration을 통해 Firehose로 직접 전달됩니다. Splunk는 S3에 저장된 로그를 주기적으로 수집하여 인덱싱합니다.
+CloudFront 실시간 로그는 Kinesis Data Stream으로 전달되고, Firehose가 이를 S3에 적재합니다. AWS WAF 로그는 WAF logging configuration을 통해 Firehose로 직접 전달됩니다. Splunk는 S3에 저장된 로그를 주기적으로 수집하여 인덱싱합니다. 가상 상점의 상품 클릭 JSON은 App EC2 백엔드가 Splunk HEC로 직접 전송합니다.
 
 Splunk에서는 다음과 같은 탐지 시나리오를 운영할 수 있습니다.
 
@@ -47,7 +48,7 @@ VPC CIDR는 `10.0.0.0/16`입니다.
 - **ALB**: HTTP/HTTPS 요청을 Private EC2로 분산합니다.
 - **EC2**: 보호 대상 웹 애플리케이션 서버입니다.
 - **S3**: CloudFront/WAF 로그의 중앙 저장소입니다.
-- **Splunk**: 로그 분석, 대시보드, 경보, 사고 대응 조사를 담당합니다.
+- **Splunk EC2**: Splunk Web UI와 HEC를 제공합니다. 발표자는 Web UI 대시보드를 보고, App EC2는 HEC로 JSON 이벤트를 전송합니다.
 - **WAF**: rate-based rule과 managed rule을 통해 L7 공격을 완화합니다.
 - **CloudFront**: 엣지 계층에서 트래픽을 받아 origin 보호와 로그 생성을 담당합니다.
 

@@ -163,7 +163,7 @@ python3 scripts/simulate_ddos_requests.py --url https://example.cloudfront.net -
 Browser
   -> POST /api/events/product-click
   -> Backend
-  -> Splunk HEC
+  -> Splunk Enterprise EC2 HEC
 ```
 
 환경 변수를 준비합니다.
@@ -199,16 +199,24 @@ Splunk HEC 설정이 비어 있으면 이벤트는 `backend/logs/store-events.nd
 
 Terraform으로 AWS에 배포할 때는 App EC2가 부팅 시 `app_source_repo`를 clone하고 `virtual-store.service` systemd 서비스로 백엔드/프론트엔드를 실행합니다. ALB target group은 `app_port`로 App EC2에 연결됩니다.
 
-HEC 토큰은 운영 환경에서 Terraform 변수에 직접 넣지 않는 것을 권장합니다. SSM SecureString에 저장한 뒤 다음 변수로 이름만 전달할 수 있습니다.
+Splunk Enterprise도 별도 EC2로 생성됩니다. 발표자는 Terraform output의 `splunk_web_url`로 Splunk Web UI에 접속해서 대시보드를 보여줄 수 있습니다. App EC2는 Splunk EC2의 Private IP HEC endpoint로 상품 클릭 JSON을 전송합니다.
 
-```hcl
-splunk_hec_token_ssm_parameter_name = "/splunk-ddos/hec-token"
+```text
+CloudFront -> ALB -> App EC2 -> Splunk EC2:8088
+Presenter Browser -> Splunk EC2:8000
 ```
 
-실습용으로만 직접 넣는 경우:
+HEC 토큰과 Splunk admin 비밀번호는 값을 비워두면 Terraform이 자동 생성합니다. 확인은 다음 명령을 사용합니다.
 
-```hcl
-splunk_hec_token = "your-hec-token"
+```bash
+terraform output -raw splunk_admin_password
+terraform output -raw splunk_hec_token
+```
+
+Splunk에서 상품 클릭 이벤트 확인:
+
+```spl
+index=main sourcetype="ddos:store:click"
 ```
 
 전송되는 이벤트 예시:
