@@ -38,11 +38,6 @@ output "cloudfront_domain_name" {
   value       = aws_cloudfront_distribution.app.domain_name
 }
 
-output "route53_record_fqdn" {
-  description = "Route 53 record FQDN"
-  value       = try(aws_route53_record.app[0].fqdn, null)
-}
-
 output "log_bucket_name" {
   description = "S3 log bucket name"
   value       = aws_s3_bucket.logs.bucket

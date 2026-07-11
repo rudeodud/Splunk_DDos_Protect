@@ -33,14 +33,33 @@ __pycache__/
 venv/
 env/
 
+# Node dependencies and build outputs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+dist/
+build/
+.next/
+.vite/
+
 # Local environment and generated logs
 .env
 .env.*
 !.env.example
 logs/
+backend/logs/
 test-logs/
 *.log
 *.gz
+
+# Editor and local tooling
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # OS generated files
 .DS_Store

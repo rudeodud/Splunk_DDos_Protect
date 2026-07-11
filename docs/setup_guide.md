@@ -25,15 +25,7 @@ admin_cidr      = "203.0.113.10/32"
 log_bucket_name = "your-unique-splunk-ddos-logs-bucket"
 ```
 
-도메인을 연결하려면 다음 값도 설정합니다.
-
-```hcl
-domain_name         = "app.example.com"
-route53_zone_id     = "Z1234567890ABCDE"
-acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."
-```
-
-CloudFront 인증서는 반드시 `us-east-1`에 있어야 합니다.
+이 아키텍처는 Route 53을 사용하지 않고 CloudFront 기본 도메인으로 접근합니다.
 
 ## 3. 배포
 
@@ -45,7 +37,7 @@ terraform plan
 terraform apply
 ```
 
-배포 후 `cloudfront_domain_name`, `log_bucket_name`, `bastion_public_ip` 출력을 확인합니다.
+배포 후 `cloudfront_domain_name`, `log_bucket_name`, `bastion_public_ip` 출력을 확인합니다. 접속 테스트는 `cloudfront_domain_name` 출력값을 사용합니다.
 
 ## 4. Splunk 수집 설정
 

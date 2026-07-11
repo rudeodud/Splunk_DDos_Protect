@@ -47,7 +47,6 @@ resource "aws_cloudfront_distribution" "app" {
   enabled             = true
   comment             = "${local.name_prefix} CloudFront distribution"
   price_class         = var.cloudfront_price_class
-  aliases             = local.use_custom_cert ? [var.domain_name] : []
   web_acl_id          = aws_wafv2_web_acl.cloudfront.arn
   wait_for_deployment = false
 
@@ -92,10 +91,7 @@ resource "aws_cloudfront_distribution" "app" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = local.use_custom_cert ? false : true
-    acm_certificate_arn            = local.use_custom_cert ? var.acm_certificate_arn : null
-    ssl_support_method             = local.use_custom_cert ? "sni-only" : null
-    minimum_protocol_version       = local.use_custom_cert ? "TLSv1.2_2021" : null
+    cloudfront_default_certificate = true
   }
 
   tags = {

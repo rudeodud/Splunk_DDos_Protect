@@ -1,7 +1,5 @@
 locals {
-  name_prefix     = "${var.project_name}-${var.environment}"
-  use_custom_cert = var.domain_name != "" && var.acm_certificate_arn != ""
-  create_dns      = var.domain_name != "" && var.route53_zone_id != ""
+  name_prefix = "${var.project_name}-${var.environment}"
 }
 
 data "aws_ami" "amazon_linux_2023" {
@@ -46,8 +44,8 @@ resource "aws_subnet" "public" {
   count                   = length(var.public_subnet_cidrs)
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_subnet_cidrs[count.index]
-  map_public_ip_on_launch = true
   availability_zone       = var.availability_zones[count.index]
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "${local.name_prefix}-public-${count.index + 1}"
@@ -58,8 +56,8 @@ resource "aws_subnet" "private" {
   count                   = length(var.private_subnet_cidrs)
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.private_subnet_cidrs[count.index]
-  map_public_ip_on_launch = false
   availability_zone       = var.availability_zones[count.index]
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "${local.name_prefix}-private-${count.index + 1}"
@@ -143,13 +141,69 @@ resource "aws_instance" "app" {
   subnet_id              = aws_subnet.private[count.index].id
   vpc_security_group_ids = [aws_security_group.app.id]
   key_name               = var.key_pair_name
+  iam_instance_profile   = aws_iam_instance_profile.app.name
 
   user_data = <<-EOF
     #!/bin/bash
+    set -euo pipefail
+
     dnf update -y
-    dnf install -y httpd
-    systemctl enable --now httpd
-    echo "Splunk DDoS Protect app instance ${count.index + 1}" > /var/www/html/index.html
+    dnf install -y git nodejs npm awscli
+
+    APP_DIR="/opt/splunk-ddos-protect"
+    APP_USER="splunkstore"
+
+    if ! id "$${APP_USER}" >/dev/null 2>&1; then
+      useradd --system --home-dir "$${APP_DIR}" --shell /sbin/nologin "$${APP_USER}"
+    fi
+
+    rm -rf "$${APP_DIR}"
+    git clone --depth 1 --branch ${jsonencode(var.app_source_ref)} ${jsonencode(var.app_source_repo)} "$${APP_DIR}"
+
+    SPLUNK_HEC_TOKEN=${jsonencode(var.splunk_hec_token)}
+    if [ -n "${var.splunk_hec_token_ssm_parameter_name}" ]; then
+      SPLUNK_HEC_TOKEN="$(aws ssm get-parameter \
+        --name ${jsonencode(var.splunk_hec_token_ssm_parameter_name)} \
+        --with-decryption \
+        --query Parameter.Value \
+        --output text \
+        --region ${jsonencode(var.aws_region)})"
+    fi
+
+    printf '%s\n' \
+      'HOST=0.0.0.0' \
+      'PORT=${var.app_port}' \
+      'SPLUNK_HEC_URL=${jsonencode(var.splunk_hec_url)}' \
+      "SPLUNK_HEC_TOKEN=$${SPLUNK_HEC_TOKEN}" \
+      'SPLUNK_HEC_INDEX=${jsonencode(var.splunk_hec_index)}' \
+      'SPLUNK_HEC_SOURCE=${jsonencode(var.splunk_hec_source)}' \
+      'SPLUNK_HEC_SOURCETYPE=${jsonencode(var.splunk_hec_sourcetype)}' \
+      'SPLUNK_HEC_INSECURE=${var.splunk_hec_insecure}' \
+      > "$${APP_DIR}/.env"
+
+    chown -R "$${APP_USER}:$${APP_USER}" "$${APP_DIR}"
+
+    printf '%s\n' \
+      '[Unit]' \
+      'Description=Splunk DDoS Protect Virtual Store' \
+      'After=network-online.target' \
+      'Wants=network-online.target' \
+      '' \
+      '[Service]' \
+      'Type=simple' \
+      "WorkingDirectory=$${APP_DIR}" \
+      'ExecStart=/usr/bin/npm start' \
+      'Restart=always' \
+      'RestartSec=5' \
+      "User=$${APP_USER}" \ 
+      'Environment=NODE_ENV=production' \
+      '' \
+      '[Install]' \
+      'WantedBy=multi-user.target' \
+      > /etc/systemd/system/virtual-store.service
+
+    systemctl daemon-reload
+    systemctl enable --now virtual-store.service
   EOF
 
   tags = {
@@ -200,18 +254,5 @@ resource "aws_lb_listener" "http" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.app.arn
-  }
-}
-
-resource "aws_route53_record" "app" {
-  count   = local.create_dns ? 1 : 0
-  zone_id = var.route53_zone_id
-  name    = var.domain_name
-  type    = "A"
-
-  alias {
-    name                   = aws_cloudfront_distribution.app.domain_name
-    zone_id                = aws_cloudfront_distribution.app.hosted_zone_id
-    evaluate_target_health = false
   }
 }

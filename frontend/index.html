@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Splunk Protect Store</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">Splunk DDoS Protect Demo</p>
+        <h1>보안 이벤트를 전송하는 가상 상점</h1>
+      </div>
+      <div class="status-pill" id="deliveryStatus">대기 중</div>
+    </header>
+
+    <main class="layout">
+      <section class="catalog" aria-label="상품 목록">
+        <article class="product-card" data-product-id="edge-shield">
+          <div class="product-media product-media-blue">Shield</div>
+          <h2>Edge Shield Hoodie</h2>
+          <p>CloudFront 엣지를 테마로 한 데모 상품입니다.</p>
+          <div class="product-footer">
+            <strong>KRW 79000</strong>
+            <button type="button">상품 보기</button>
+          </div>
+        </article>
+
+        <article class="product-card" data-product-id="waf-cap">
+          <div class="product-media product-media-red">WAF</div>
+          <h2>WAF Guard Cap</h2>
+          <p>봇 트래픽 차단을 상징하는 캡입니다.</p>
+          <div class="product-footer">
+            <strong>KRW 32000</strong>
+            <button type="button">상품 보기</button>
+          </div>
+        </article>
+
+        <article class="product-card" data-product-id="log-bucket">
+          <div class="product-media product-media-green">S3</div>
+          <h2>Log Bucket Tote</h2>
+          <p>S3 로그 저장소 콘셉트의 토트백입니다.</p>
+          <div class="product-footer">
+            <strong>KRW 45000</strong>
+            <button type="button">상품 보기</button>
+          </div>
+        </article>
+
+        <article class="product-card" data-product-id="splunk-mug">
+          <div class="product-media product-media-orange">SPL</div>
+          <h2>Splunk Query Mug</h2>
+          <p>SPL 탐지 쿼리를 떠올리게 하는 머그입니다.</p>
+          <div class="product-footer">
+            <strong>KRW 21000</strong>
+            <button type="button">상품 보기</button>
+          </div>
+        </article>
+      </section>
+
+      <aside class="event-panel" aria-label="전송 이벤트 미리보기">
+        <h2>전송 JSON</h2>
+        <pre id="eventPreview">상품 버튼을 클릭하면 JSON 이벤트가 표시됩니다.</pre>
+      </aside>
+    </main>
+
+    <script src="/js/store.js"></script>
+  </body>
+</html>

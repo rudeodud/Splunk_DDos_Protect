@@ -12,14 +12,20 @@ admin_cidr    = "203.0.113.10/32"
 
 bastion_instance_type = "t3.micro"
 app_instance_type     = "t3.micro"
-app_port              = 80
+app_port              = 3000
+app_source_repo       = "https://github.com/rudeodud/Splunk_DDos_Protect.git"
+app_source_ref        = "main"
+
+# Splunk HEC 연동. 운영에서는 token 직접 입력보다 SSM SecureString 사용을 권장합니다.
+splunk_hec_url                      = "http://your-splunk-ip:8088/services/collector/event"
+splunk_hec_token                    = ""
+splunk_hec_token_ssm_parameter_name = ""
+splunk_hec_index                    = "main"
+splunk_hec_source                   = "virtual-store"
+splunk_hec_sourcetype               = "ddos:store:click"
+splunk_hec_insecure                 = false
 
 log_bucket_name    = "your-unique-splunk-ddos-logs-bucket"
 log_retention_days = 90
 
 waf_rate_limit = 2000
-
-# 선택 사항: 사용자 도메인을 CloudFront에 연결할 때만 설정합니다.
-domain_name         = ""
-route53_zone_id     = ""
-acm_certificate_arn = ""

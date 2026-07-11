@@ -1,0 +1,13 @@
+{
+  "name": "splunk-ddos-protect-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Virtual store frontend that sends product click events to Splunk HEC through a local backend.",
+  "scripts": {
+    "start": "node backend/server.js",
+    "check": "node --check backend/config/loadEnv.js && node --check backend/services/splunkHecClient.js && node --check backend/server.js && node --check frontend/js/store.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

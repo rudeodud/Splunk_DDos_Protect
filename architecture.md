@@ -1,14 +1,14 @@
 # 아키텍처 상세 설명
 
-이 문서는 루트 폴더의 `Splunk_DDos_Protect.jpg`를 기준으로 정리했습니다.
+이 문서는 루트 폴더의 `Splunk_Protect_DDos.png`를 기준으로 정리했습니다.
 
 ## 1. 사용자 요청 처리 흐름
 
 ```text
-User -> Route 53 -> CloudFront -> AWS WAF -> ALB -> Private EC2 2대
+User -> CloudFront -> AWS WAF -> ALB -> Private EC2 2대
 ```
 
-사용자는 도메인으로 서비스에 접근합니다. Route 53은 도메인을 CloudFront 배포로 연결합니다. CloudFront는 엣지 캐시와 TLS 종단 역할을 수행하며, AWS WAF는 CloudFront에 연결되어 비정상 요청을 필터링합니다.
+사용자는 CloudFront 배포 도메인으로 서비스에 접근합니다. CloudFront는 엣지 캐시와 TLS 종단 역할을 수행하며, AWS WAF는 CloudFront에 연결되어 비정상 요청을 필터링합니다.
 
 정상 요청은 ALB로 전달되고, ALB는 Private subnet에 있는 EC2 2대에 트래픽을 분산합니다. EC2는 Public IP 없이 내부 네트워크에만 위치하므로 직접 인터넷 노출을 줄일 수 있습니다.
 
