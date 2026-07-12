@@ -161,7 +161,7 @@ resource "aws_instance" "app" {
     rm -rf "$${APP_DIR}"
     git clone --depth 1 --branch ${jsonencode(var.app_source_ref)} ${jsonencode(var.app_source_repo)} "$${APP_DIR}"
 
-    SPLUNK_HEC_TOKEN=${jsonencode(local.effective_splunk_hec_token)}
+    SPLUNK_HEC_TOKEN=${jsonencode(var.splunk_hec_token)}
     if [ -n "${var.splunk_hec_token_ssm_parameter_name}" ]; then
       SPLUNK_HEC_TOKEN="$(aws ssm get-parameter \
         --name ${jsonencode(var.splunk_hec_token_ssm_parameter_name)} \
@@ -174,7 +174,7 @@ resource "aws_instance" "app" {
     printf '%s\n' \
       'HOST=0.0.0.0' \
       'PORT=${var.app_port}' \
-      'SPLUNK_HEC_URL=${jsonencode(local.effective_splunk_hec_url)}' \
+      'SPLUNK_HEC_URL=${jsonencode(var.splunk_hec_url)}' \
       "SPLUNK_HEC_TOKEN=$${SPLUNK_HEC_TOKEN}" \
       'SPLUNK_HEC_INDEX=${jsonencode(var.splunk_hec_index)}' \
       'SPLUNK_HEC_SOURCE=${jsonencode(var.splunk_hec_source)}' \

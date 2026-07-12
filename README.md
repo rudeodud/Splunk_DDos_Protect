@@ -23,12 +23,17 @@ CloudFront Real-time Logs
   -> Kinesis Data Stream
   -> Kinesis Data Firehose
   -> S3
-  -> Splunk
+  -> Local Splunk S3 Input
 
 AWS WAF Logs
   -> Kinesis Data Firehose
   -> S3
-  -> Splunk
+  -> Local Splunk S3 Input
+
+VPC Flow Logs
+  -> Kinesis Data Firehose
+  -> S3
+  -> Local Splunk S3 Input
 ```
 
 ## 네트워크 CIDR
@@ -49,8 +54,8 @@ AWS WAF Logs
 - **Private EC2 2대**: 실제 웹 애플리케이션 서버 역할입니다. 외부에서 직접 접근하지 않고 ALB를 통해서만 접근합니다.
 - **Bastion Host**: 운영자가 Private EC2에 SSH 접근할 때 사용하는 점프 서버입니다. `admin_cidr`로 SSH 접근 대역을 제한합니다.
 - **NAT Gateway**: AZ c Public subnet(`10.0.10.0/24`)에 위치하며, Private subnet EC2가 패키지 업데이트 등 외부 인터넷으로 나갈 수 있게 합니다.
-- **S3**: CloudFront/WAF 로그를 저장합니다. Splunk는 이 버킷을 대상으로 로그를 수집합니다.
-- **Splunk**: S3에 적재된 CloudFront/WAF 로그를 수집하고 SPL 탐지 쿼리로 이상 트래픽을 분석합니다.
+- **S3**: CloudFront/WAF/VPC Flow Logs를 저장합니다. 로컬 Splunk는 이 버킷을 대상으로 로그를 수집합니다.
+- **Splunk**: Terraform이 EC2로 생성하지 않습니다. 발표자는 로컬 Splunk Enterprise에 Splunk Add-on for AWS를 설치하고 S3 로그를 수집해 이상 트래픽을 분석합니다.
 
 ## 프로젝트 구조
 
@@ -111,8 +116,9 @@ app_port        = 3000
 app_source_repo = "https://github.com/rudeodud/Splunk_DDos_Protect.git"
 app_source_ref  = "main"
 
-splunk_hec_url        = "http://your-splunk-ip:8088/services/collector/event"
-splunk_hec_sourcetype = "ddos:store:click"
+# 기본 구조는 HEC 직접 전송이 아니라 S3 수집입니다.
+splunk_hec_url   = ""
+splunk_hec_token = ""
 ```
 
 3. Terraform을 초기화하고 배포 계획을 확인합니다.
@@ -137,7 +143,7 @@ terraform apply
 - `splunk/savedsearches.conf.example`
 - `splunk/ddos_detection_queries.spl`
 
-Splunk Add-on for AWS를 사용하는 경우 S3 input에서 로그 버킷과 prefix를 각각 `cloudfront/`, `waf/`로 지정합니다.
+Splunk Add-on for AWS를 사용하는 경우 S3 input에서 로그 버킷과 prefix를 각각 `cloudfront/`, `waf/`, `vpc-flow/`로 지정합니다.
 
 ## 테스트 로그 생성
 
@@ -157,13 +163,18 @@ python3 scripts/simulate_ddos_requests.py --url https://example.cloudfront.net -
 
 ## 가상 상점 이벤트 전송
 
-가상 상점 프론트엔드는 상품 버튼 클릭 이벤트를 JSON으로 만들고, 백엔드 API가 Splunk HTTP Event Collector(HEC)로 전송합니다. HEC 토큰은 브라우저에 노출하지 않고 백엔드 환경변수로만 관리합니다.
+가상 상점 프론트엔드는 상품 버튼 클릭 이벤트를 JSON으로 만들고, 백엔드 API가 이를 로컬 파일에 남깁니다. AWS 배포 환경에서는 사용자의 클릭 요청 자체가 CloudFront/WAF/VPC Flow Logs로 S3에 적재되고, 로컬 Splunk가 S3에서 수집합니다. 별도 외부 Splunk HEC가 있을 때만 HEC URL과 토큰을 설정합니다.
 
 ```text
 Browser
   -> POST /api/events/product-click
   -> Backend
-  -> Splunk Enterprise EC2 HEC
+  -> backend/logs/store-events.ndjson
+
+CloudFront/WAF/VPC Flow Logs
+  -> Kinesis Firehose
+  -> S3
+  -> Local Splunk
 ```
 
 환경 변수를 준비합니다.
@@ -176,8 +187,8 @@ cp .env.example .env
 
 ```bash
 PORT=3000
-SPLUNK_HEC_URL=https://splunk.example.com:8088/services/collector/event
-SPLUNK_HEC_TOKEN=your-hec-token
+SPLUNK_HEC_URL=
+SPLUNK_HEC_TOKEN=
 SPLUNK_HEC_INDEX=main
 SPLUNK_HEC_SOURCE=virtual-store
 SPLUNK_HEC_SOURCETYPE=ddos:store:click
@@ -197,26 +208,20 @@ http://localhost:3000
 
 Splunk HEC 설정이 비어 있으면 이벤트는 `backend/logs/store-events.ndjson`에 로컬 저장됩니다. 이 파일은 `.gitignore`에 의해 Git에 올라가지 않습니다.
 
-Terraform으로 AWS에 배포할 때는 App EC2가 부팅 시 `app_source_repo`를 clone하고 `virtual-store.service` systemd 서비스로 백엔드/프론트엔드를 실행합니다. ALB target group은 `app_port`로 App EC2에 연결됩니다.
-
-Splunk Enterprise도 별도 EC2로 생성됩니다. 발표자는 Terraform output의 `splunk_web_url`로 Splunk Web UI에 접속해서 대시보드를 보여줄 수 있습니다. App EC2는 Splunk EC2의 Private IP HEC endpoint로 상품 클릭 JSON을 전송합니다.
+Terraform으로 AWS에 배포할 때는 App EC2가 부팅 시 `app_source_repo`를 clone하고 `virtual-store.service` systemd 서비스로 백엔드/프론트엔드를 실행합니다. ALB target group은 `app_port`로 App EC2에 연결됩니다. Splunk는 로컬 PC의 Enterprise를 사용하고, S3 input으로 AWS 로그 버킷을 수집합니다.
 
 ```text
-CloudFront -> ALB -> App EC2 -> Splunk EC2:8088
-Presenter Browser -> Splunk EC2:8000
+CloudFront -> ALB -> App EC2
+CloudFront/WAF/VPC Flow Logs -> Firehose -> S3
+Local Splunk Enterprise -> S3 input -> Dashboard
 ```
 
-HEC 토큰과 Splunk admin 비밀번호는 값을 비워두면 Terraform이 자동 생성합니다. 확인은 다음 명령을 사용합니다.
-
-```bash
-terraform output -raw splunk_admin_password
-terraform output -raw splunk_hec_token
-```
-
-Splunk에서 상품 클릭 이벤트 확인:
+Splunk에서 로그 확인:
 
 ```spl
-index=main sourcetype="ddos:store:click"
+index=aws sourcetype=aws:cloudfront:accesslogs
+index=aws sourcetype=aws:waf
+index=aws sourcetype=aws:vpcflow
 ```
 
 전송되는 이벤트 예시:
@@ -245,7 +250,7 @@ index=main sourcetype="ddos:store:click"
 ## 보안 주의사항
 
 - AWS Access Key와 Secret Key는 코드에 절대 하드코딩하지 않습니다.
-- Splunk HEC Token은 프론트엔드 코드에 넣지 않고 `.env` 또는 운영 환경변수로만 주입합니다.
+- Splunk HEC Token을 사용할 경우 프론트엔드 코드에 넣지 않고 `.env` 또는 운영 환경변수로만 주입합니다.
 - Terraform 실행은 AWS CLI profile, SSO, IAM Role, OIDC 등 안전한 인증 방식을 사용합니다.
 - `admin_cidr`는 반드시 본인 또는 운영망의 고정 IP 대역으로 제한합니다.
 - WAF rate limit은 서비스 정상 트래픽 기준에 맞게 조정합니다.

@@ -12,16 +12,12 @@ admin_cidr    = "203.0.113.10/32"
 
 bastion_instance_type = "t3.micro"
 app_instance_type     = "t3.micro"
-splunk_instance_type  = "t3.medium"
 app_port              = 3000
 app_source_repo       = "https://github.com/rudeodud/Splunk_DDos_Protect.git"
 app_source_ref        = "main"
 
-# Splunk Enterprise EC2를 Terraform이 생성합니다. 아래 값을 비우면 자동 생성된 Splunk EC2로 연결됩니다.
-splunk_web_port                     = 8000
-splunk_hec_port                     = 8088
-splunk_admin_password               = ""
-splunk_download_url                 = "https://download.splunk.com/products/splunk/releases/9.2.1/linux/splunk-9.2.1-78803f08aabb.x86_64.rpm"
+# 기본 구조는 Kinesis Firehose -> S3 -> 로컬 Splunk S3 수집입니다.
+# 아래 HEC 값은 App 클릭 JSON을 외부 Splunk HEC로 직접 보낼 때만 채웁니다.
 splunk_hec_url                      = ""
 splunk_hec_token                    = ""
 splunk_hec_token_ssm_parameter_name = ""

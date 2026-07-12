@@ -12,3 +12,10 @@ KV_MODE = json
 TRUNCATE = 50000
 TIME_PREFIX = "timestamp":
 MAX_TIMESTAMP_LOOKAHEAD = 13
+
+[aws:vpcflow]
+SHOULD_LINEMERGE = false
+INDEXED_EXTRACTIONS = json
+KV_MODE = json
+TRUNCATE = 10000
+EXTRACT-vpcflow-message = ^\{"message":"(?<version>\d+)\s+(?<account_id>\S+)\s+(?<interface_id>\S+)\s+(?<srcaddr>\S+)\s+(?<dstaddr>\S+)\s+(?<srcport>\S+)\s+(?<dstport>\S+)\s+(?<protocol>\S+)\s+(?<packets>\S+)\s+(?<bytes>\S+)\s+(?<start>\S+)\s+(?<end>\S+)\s+(?<action>\S+)\s+(?<log_status>\S+)

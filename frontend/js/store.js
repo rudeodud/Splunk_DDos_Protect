@@ -58,12 +58,18 @@ function buildEvent(product) {
 
 async function sendProductClick(product, button) {
   const event = buildEvent(product);
+  const params = new URLSearchParams({
+    product_id: product.id,
+    product_name: product.name,
+    product_category: product.category,
+  });
+
   previewEl.textContent = JSON.stringify(event, null, 2);
   setStatus("전송 중", "warn");
   button.disabled = true;
 
   try {
-    const response = await fetch("/api/events/product-click", {
+    const response = await fetch(`/api/events/product-click?${params.toString()}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

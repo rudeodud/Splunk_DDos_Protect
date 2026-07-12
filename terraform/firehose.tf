@@ -149,6 +149,78 @@ resource "aws_kinesis_firehose_delivery_stream" "waf_logs" {
   }
 }
 
+resource "aws_iam_role" "vpc_flow_firehose" {
+  name = "${local.name_prefix}-vpc-flow-firehose-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "firehose.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "vpc_flow_firehose" {
+  name = "${local.name_prefix}-vpc-flow-firehose-policy"
+  role = aws_iam_role.vpc_flow_firehose.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:AbortMultipartUpload",
+          "s3:GetBucketLocation",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:ListBucketMultipartUploads",
+          "s3:PutObject"
+        ]
+        Resource = [
+          aws_s3_bucket.logs.arn,
+          "${aws_s3_bucket.logs.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_kinesis_firehose_delivery_stream" "vpc_flow_logs" {
+  name        = "${local.name_prefix}-vpc-flow-firehose"
+  destination = "extended_s3"
+
+  tags = {
+    LogDeliveryEnabled = "true"
+  }
+
+  extended_s3_configuration {
+    role_arn            = aws_iam_role.vpc_flow_firehose.arn
+    bucket_arn          = aws_s3_bucket.logs.arn
+    prefix              = "vpc-flow/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
+    error_output_prefix = "errors/vpc-flow/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
+    buffering_size      = 5
+    buffering_interval  = 60
+    compression_format  = "GZIP"
+  }
+}
+
+resource "aws_flow_log" "vpc" {
+  log_destination          = aws_kinesis_firehose_delivery_stream.vpc_flow_logs.arn
+  log_destination_type     = "kinesis-data-firehose"
+  traffic_type             = "ALL"
+  vpc_id                   = aws_vpc.main.id
+  max_aggregation_interval = 60
+
+  tags = {
+    Name = "${local.name_prefix}-vpc-flow-logs"
+  }
+}
+
 resource "aws_iam_role" "cloudfront_realtime_logs" {
   provider = aws.us_east_1
   name     = "${local.name_prefix}-cloudfront-rt-role"

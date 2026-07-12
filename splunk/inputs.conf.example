@@ -18,3 +18,12 @@ key_name = waf/
 index = aws
 sourcetype = aws:waf
 interval = 300
+
+[aws_s3://vpc_flow_logs]
+disabled = 0
+aws_account = default
+bucket_name = your-unique-splunk-ddos-logs-bucket
+key_name = vpc-flow/
+index = aws
+sourcetype = aws:vpcflow
+interval = 300

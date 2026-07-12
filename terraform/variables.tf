@@ -63,18 +63,6 @@ variable "app_instance_type" {
   default     = "t3.micro"
 }
 
-variable "splunk_instance_type" {
-  description = "Splunk Enterprise EC2 인스턴스 타입"
-  type        = string
-  default     = "t3.medium"
-}
-
-variable "splunk_root_volume_size" {
-  description = "Splunk Enterprise EC2 루트 EBS 볼륨 크기(GB)"
-  type        = number
-  default     = 30
-}
-
 variable "ami_id" {
   description = "EC2 AMI ID. 비워두면 Amazon Linux 2023 최신 AMI를 사용"
   type        = string
@@ -100,13 +88,13 @@ variable "app_source_ref" {
 }
 
 variable "splunk_hec_url" {
-  description = "외부 Splunk HEC URL. 비우면 Terraform이 생성한 Splunk EC2 private IP를 사용"
+  description = "선택 사항: App 클릭 JSON을 직접 보낼 외부 Splunk HEC URL. 로컬 Splunk가 S3를 수집하는 기본 구조에서는 비워둠"
   type        = string
   default     = ""
 }
 
 variable "splunk_hec_token" {
-  description = "실습용 Splunk HEC token. 운영에서는 splunk_hec_token_ssm_parameter_name 사용 권장"
+  description = "선택 사항: 외부 Splunk HEC token. 로컬 Splunk가 S3를 수집하는 기본 구조에서는 비워둠"
   type        = string
   default     = ""
   sensitive   = true
@@ -140,31 +128,6 @@ variable "splunk_hec_insecure" {
   description = "Self-signed HTTPS 인증서 실습용 검증 비활성화 여부"
   type        = bool
   default     = false
-}
-
-variable "splunk_web_port" {
-  description = "Splunk Web UI 포트"
-  type        = number
-  default     = 8000
-}
-
-variable "splunk_hec_port" {
-  description = "Splunk HEC 포트"
-  type        = number
-  default     = 8088
-}
-
-variable "splunk_admin_password" {
-  description = "Splunk admin 비밀번호. 비우면 Terraform이 임의 생성"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "splunk_download_url" {
-  description = "Splunk Enterprise Linux RPM 다운로드 URL"
-  type        = string
-  default     = "https://download.splunk.com/products/splunk/releases/9.2.1/linux/splunk-9.2.1-78803f08aabb.x86_64.rpm"
 }
 
 variable "log_bucket_name" {

@@ -5,7 +5,7 @@
 - Terraform `>= 1.5.0`
 - AWS CLI 인증 설정
 - EC2 Key Pair
-- Terraform이 생성하는 Splunk Enterprise EC2
+- 로컬 Splunk Enterprise
 - Splunk Add-on for AWS
 
 AWS 인증은 환경 변수, AWS SSO, profile, IAM Role 등으로 설정합니다. Access Key와 Secret Key를 Terraform 코드에 넣지 않습니다.
@@ -26,7 +26,7 @@ log_bucket_name = "your-unique-splunk-ddos-logs-bucket"
 ```
 
 이 아키텍처는 Route 53을 사용하지 않고 CloudFront 기본 도메인으로 접근합니다.
-Splunk Enterprise EC2도 같이 생성되며, `admin_cidr`에서만 Splunk Web UI 8000 포트에 접근할 수 있습니다.
+Splunk Enterprise는 로컬 PC에서 실행하고, AWS의 S3 로그 버킷을 Splunk Add-on for AWS로 수집합니다.
 
 ## 3. 배포
 
@@ -38,14 +38,7 @@ terraform plan
 terraform apply
 ```
 
-배포 후 `cloudfront_domain_name`, `splunk_web_url`, `log_bucket_name`, `bastion_public_ip` 출력을 확인합니다. 접속 테스트는 `cloudfront_domain_name` 출력값을 사용합니다.
-
-Splunk admin 비밀번호와 HEC 토큰 확인:
-
-```bash
-terraform output -raw splunk_admin_password
-terraform output -raw splunk_hec_token
-```
+배포 후 `cloudfront_domain_name`, `log_bucket_name`, `cloudfront_firehose_name`, `waf_firehose_name`, `vpc_flow_firehose_name`, `bastion_public_ip` 출력을 확인합니다. 접속 테스트는 `cloudfront_domain_name` 출력값을 사용합니다.
 
 ## 4. Splunk 수집 설정
 
@@ -53,8 +46,10 @@ Splunk Add-on for AWS에서 S3 input을 생성합니다.
 
 - CloudFront 로그 prefix: `cloudfront/`
 - WAF 로그 prefix: `waf/`
+- VPC Flow Logs prefix: `vpc-flow/`
 - CloudFront sourcetype: `aws:cloudfront:accesslogs`
 - WAF sourcetype: `aws:waf`
+- VPC Flow Logs sourcetype: `aws:vpcflow`
 
 예시 설정은 `splunk/inputs.conf.example`과 `splunk/props.conf.example`을 참고합니다.
 

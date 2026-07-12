@@ -52,3 +52,25 @@ index=aws sourcetype=aws:waf
 | stats count as block_count values(country) as countries by client_ip
 | where block_count > 50
 | sort - block_count
+
+### VPC Flow Logs 기반 패킷 급증 탐지
+index=aws sourcetype=aws:vpcflow action=ACCEPT
+| eval packets=tonumber(packets), bytes=tonumber(bytes)
+| bin _time span=1m
+| stats sum(packets) as packets sum(bytes) as bytes count as flows by _time srcaddr dstaddr dstport
+| where packets > 10000 OR bytes > 50000000 OR flows > 500
+| sort - packets
+
+### 목적지 포트별 트래픽 상위 집계
+index=aws sourcetype=aws:vpcflow action=ACCEPT
+| eval packets=tonumber(packets), bytes=tonumber(bytes)
+| stats sum(packets) as packets sum(bytes) as bytes count as flows dc(srcaddr) as unique_sources by dstport
+| sort - packets
+
+### 동일 출발지의 짧은 시간 내 다량 Flow 탐지
+index=aws sourcetype=aws:vpcflow
+| eval packets=tonumber(packets), bytes=tonumber(bytes)
+| bin _time span=1m
+| stats count as flows sum(packets) as packets sum(bytes) as bytes dc(dstaddr) as unique_targets by _time srcaddr
+| where flows > 1000 OR packets > 20000 OR unique_targets > 20
+| sort - flows
