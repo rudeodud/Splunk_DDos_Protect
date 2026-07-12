@@ -30,23 +30,39 @@ def request_once(base_url: str, timeout: float) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="승인된 테스트 대상에 DDoS 유사 요청을 보냅니다.")
+    parser = argparse.ArgumentParser(description="승인된 테스트 대상에 부하 테스트 요청을 보냅니다.")
     parser.add_argument("--url", required=True, help="테스트 대상 URL")
     parser.add_argument("--requests", type=int, default=100, help="총 요청 수")
     parser.add_argument("--concurrency", type=int, default=10, help="동시 요청 수")
     parser.add_argument("--timeout", type=float, default=5.0, help="요청 타임아웃")
+    parser.add_argument("--duration-seconds", type=int, default=0, help="지정한 초 동안 반복 실행")
+    parser.add_argument("--delay", type=float, default=1.0, help="반복 실행 사이 대기 시간")
     args = parser.parse_args()
 
     start = time.time()
     status_counts = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as executor:
-        futures = [executor.submit(request_once, args.url, args.timeout) for _ in range(args.requests)]
-        for future in concurrent.futures.as_completed(futures):
-            status = future.result()
-            status_counts[status] = status_counts.get(status, 0) + 1
+    sent = 0
+
+    def run_batch() -> None:
+        nonlocal sent
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as executor:
+            futures = [executor.submit(request_once, args.url, args.timeout) for _ in range(args.requests)]
+            for future in concurrent.futures.as_completed(futures):
+                status = future.result()
+                status_counts[status] = status_counts.get(status, 0) + 1
+                sent += 1
+
+    if args.duration_seconds > 0:
+        end_time = start + args.duration_seconds
+        while time.time() < end_time:
+            run_batch()
+            if args.delay > 0 and time.time() < end_time:
+                time.sleep(args.delay)
+    else:
+        run_batch()
 
     elapsed = time.time() - start
-    print(f"sent={args.requests} elapsed={elapsed:.2f}s rps={args.requests / elapsed:.2f}")
+    print(f"sent={sent} elapsed={elapsed:.2f}s rps={sent / elapsed:.2f}")
     for status, count in sorted(status_counts.items()):
         print(f"status={status} count={count}")
 
