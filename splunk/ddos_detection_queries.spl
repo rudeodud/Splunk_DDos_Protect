@@ -74,3 +74,30 @@ index=aws sourcetype=aws:vpcflow
 | stats count as flows sum(packets) as packets sum(bytes) as bytes dc(dstaddr) as unique_targets by _time srcaddr
 | where flows > 1000 OR packets > 20000 OR unique_targets > 20
 | sort - flows
+
+### 가상 상점 상품별 클릭 수 집계
+index=aws earliest=-24h "/api/events/product-click" "product_id="
+| rex field=_raw "product_id=(?<product_id>[^&\s\t]+)"
+| eval product_id=urldecode(product_id)
+| stats count as clicks by product_id
+| sort - clicks
+
+### 가상 상점 상품명별 클릭 수 집계
+index=aws earliest=-24h "/api/events/product-click" "product_name="
+| rex field=_raw "product_name=(?<product_name>[^&\s\t]+)"
+| eval product_name=urldecode(product_name)
+| stats count as clicks by product_name
+| sort - clicks
+
+### 가상 상점 카테고리별 클릭 수 집계
+index=aws earliest=-24h "/api/events/product-click" "product_category="
+| rex field=_raw "product_category=(?<product_category>[^&\s\t]+)"
+| eval product_category=urldecode(product_category)
+| stats count as clicks by product_category
+| sort - clicks
+
+### 가상 상점 상품별 클릭 추이
+index=aws earliest=-24h "/api/events/product-click" "product_id="
+| rex field=_raw "product_id=(?<product_id>[^&\s\t]+)"
+| eval product_id=urldecode(product_id)
+| timechart span=5m count by product_id
