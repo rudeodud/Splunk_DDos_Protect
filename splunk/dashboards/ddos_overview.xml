@@ -11,8 +11,8 @@
       </default>
     </input>
     <input type="text" token="ddos_threshold">
-      <label>1분 요청 임계값</label>
-      <default>1000</default>
+      <label>DDoS 의심 임계값(1분 요청 수)</label>
+      <default>300</default>
     </input>
     <input type="text" token="demo_threshold">
       <label>발표용 낮은 임계값</label>
@@ -64,6 +64,22 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*clo
           ]]></query>
         </search>
         <option name="underLabel">1분 임계값 이상</option>
+      </single>
+    </panel>
+    <panel>
+      <title>분당 최대 요청 수</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| bin _time span=1m
+| stats count as requests by _time client_ip
+| stats max(requests) as max_requests
+          ]]></query>
+        </search>
+        <option name="underLabel">단일 IP 기준</option>
       </single>
     </panel>
   </row>
