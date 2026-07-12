@@ -55,6 +55,7 @@ build/
 logs/
 backend/logs/
 test-logs/
+runtime/
 *.log
 *.gz
 *.ndjson
