@@ -1,0 +1,213 @@
+<form version="1.1" theme="light">
+  <label>AWS DDoS 탐지 및 가상 상점 분석</label>
+  <description>CloudFront 로그 기반 IP 트래픽, DDoS 의심 이벤트, 상품 클릭을 분석하는 발표용 대시보드입니다.</description>
+
+  <fieldset submitButton="true" autoRun="true">
+    <input type="time" token="time_range">
+      <label>시간 범위</label>
+      <default>
+        <earliest>-24h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="text" token="ddos_threshold">
+      <label>1분 요청 임계값</label>
+      <default>1000</default>
+    </input>
+    <input type="text" token="demo_threshold">
+      <label>발표용 낮은 임계값</label>
+      <default>30</default>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <title>전체 요청 수</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| stats count as total_requests
+          ]]></query>
+        </search>
+        <option name="underLabel">CloudFront 로그 기준</option>
+      </single>
+    </panel>
+    <panel>
+      <title>고유 IP 수</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| stats dc(client_ip) as unique_ips
+          ]]></query>
+        </search>
+        <option name="underLabel">접속 원본 IP</option>
+      </single>
+    </panel>
+    <panel>
+      <title>DDoS 의심 IP 수</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| bin _time span=1m
+| stats count as requests by _time client_ip
+| where requests >= tonumber("$ddos_threshold$")
+| stats dc(client_ip) as suspicious_ips
+          ]]></query>
+        </search>
+        <option name="underLabel">1분 임계값 이상</option>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>1분당 IP별 요청 추이</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| timechart span=1m count by client_ip limit=10
+          ]]></query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>1분에 $ddos_threshold$회 이상 요청한 IP</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| bin _time span=1m
+| stats count as requests by _time client_ip
+| where requests >= tonumber("$ddos_threshold$")
+| timechart span=1m sum(requests) by client_ip limit=10
+          ]]></query>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>발표용 임계값($demo_threshold$회) 이상 IP</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| bin _time span=1m
+| stats count as requests by _time client_ip
+| where requests >= tonumber("$demo_threshold$")
+| timechart span=1m sum(requests) by client_ip limit=10
+          ]]></query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>요청 수 상위 IP</title>
+      <table>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)"
+| where isnotnull(client_ip)
+| stats count as requests by client_ip
+| sort - requests
+| head 20
+          ]]></query>
+        </search>
+      </table>
+    </panel>
+    <panel>
+      <title>상태 코드 분포</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+\S+\s+\S+\s+(?<status>\d{3})"
+| where isnotnull(status)
+| stats count as requests by status
+| sort status
+          ]]></query>
+        </search>
+        <option name="charting.chart">pie</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>동일 URI 반복 요청 상위</title>
+      <table>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+| rex field=_raw "^\S+\s+(?<client_ip>\S+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(?<host>\S+)\s+(?<uri>\S+)"
+| where isnotnull(client_ip) AND isnotnull(uri)
+| bin _time span=1m
+| stats count as requests by _time client_ip uri
+| where requests >= tonumber("$demo_threshold$")
+| sort - requests
+| head 50
+          ]]></query>
+        </search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>상품별 클릭 수</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ "/api/events/product-click" "product_name="
+| rex field=_raw "product_name=(?<product_name>[^&\s\t]+)"
+| eval product_name=replace(urldecode(product_name), "\+", " ")
+| stats count as clicks by product_name
+| sort - clicks
+          ]]></query>
+        </search>
+        <option name="charting.chart">pie</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>상품 클릭 추이</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ "/api/events/product-click" "product_name="
+| rex field=_raw "product_name=(?<product_name>[^&\s\t]+)"
+| eval product_name=replace(urldecode(product_name), "\+", " ")
+| timechart span=1m count by product_name limit=10
+          ]]></query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+</form>
