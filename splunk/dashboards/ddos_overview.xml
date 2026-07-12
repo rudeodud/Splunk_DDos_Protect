@@ -26,7 +26,7 @@
       <single>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)"
 | where isnotnull(client_ip)
 | stats count as total_requests
@@ -40,7 +40,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <single>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)"
 | where isnotnull(client_ip)
 | stats dc(client_ip) as unique_ips
@@ -54,7 +54,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <single>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)"
 | where isnotnull(client_ip)
 | bin _time span=1m
@@ -74,7 +74,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <chart>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)"
 | where isnotnull(client_ip)
 | timechart span=1m count by client_ip limit=10
@@ -92,7 +92,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <chart>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)"
 | where isnotnull(client_ip)
 | bin _time span=1m
@@ -110,7 +110,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <chart>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)"
 | where isnotnull(client_ip)
 | bin _time span=1m
@@ -131,7 +131,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <table>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)"
 | where isnotnull(client_ip)
 | stats count as requests by client_ip
@@ -146,7 +146,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <chart>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+\S+\s+\S+\s+(?<status>\d{3})"
 | where isnotnull(status)
 | stats count as requests by status
@@ -164,7 +164,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <table>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*"
 | rex field=_raw "^\S+\s+(?<client_ip>\S+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(?<host>\S+)\s+(?<uri>\S+)"
 | where isnotnull(client_ip) AND isnotnull(uri)
 | bin _time span=1m
@@ -184,7 +184,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$
       <chart>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ "/api/events/product-click" "product_name="
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*" "/api/events/product-click" "product_name="
 | rex field=_raw "product_name=(?<product_name>[^&\s\t]+)"
 | eval product_name=replace(urldecode(product_name), "\+", " ")
 | stats count as clicks by product_name
@@ -199,7 +199,7 @@ index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ "/api/events
       <chart>
         <search>
           <query><![CDATA[
-index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ "/api/events/product-click" "product_name="
+index=aws earliest=$time_range.earliest$ latest=$time_range.latest$ source="*cloudfront*" "/api/events/product-click" "product_name="
 | rex field=_raw "product_name=(?<product_name>[^&\s\t]+)"
 | eval product_name=replace(urldecode(product_name), "\+", " ")
 | timechart span=1m count by product_name limit=10
