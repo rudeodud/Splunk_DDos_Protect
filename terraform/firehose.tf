@@ -51,7 +51,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
 resource "aws_kinesis_stream" "cloudfront_logs" {
   provider         = aws.us_east_1
   name             = "${local.name_prefix}-cloudfront-logs"
-  shard_count      = 1
+  shard_count      = 6
   retention_period = 24
 
   stream_mode_details {
